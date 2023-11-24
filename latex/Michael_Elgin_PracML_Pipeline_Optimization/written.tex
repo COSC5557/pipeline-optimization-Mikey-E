@@ -35,7 +35,7 @@
 
 \section{Introduction} %What problem are you solving, how are you going to solve it.
 
-Parts of a machine learning pipeline include not only the choice of model (algorithm) and the task of tuning the associated hyperparameters, but various choices about how to preprocess the data. This report explores the effect of normalization, feature reduction, and sample reduction (outlier removal) on the wine quality dataset\footnote{https://archive.ics.uci.edu/dataset/186/wine+quality}. The effect of these preprocessing changes is examined on a linear regression model for regression, and a decision tree for classification.
+Parts of a machine learning pipeline include not only the choice of model (algorithm) and the task of tuning the associated hyperparameters, but various choices about how to preprocess the data. This report explores the effect of normalization, feature reduction, and sample reduction (outlier removal) on the wine quality dataset\footnote{https://archive.ics.uci.edu/dataset/186/wine+quality}. The effect of these preprocessing changes is examined on a linear regression model for regression, and a decision tree and random forest for classification.
 
 \section{Dataset Description} %Describe the data you're using, e.g. how many features and observations, what are you predicting, any missing values, etc.
 
@@ -61,19 +61,17 @@ $$
 Acc_{Classification\ model} = (1 - GE_{Classification\ model}) * 100
 $$
 
-For the linear model, no hyperparameters are tune. For the decision tree, grid-search is used for trying hyperparameter configurations. The grid is exponential in fashion, meaning exponents for $2^x$ are tried. This allows for a much wider exploration of the hyperparameter space given realistic time constraints, since adjusting hyperparameters in a linear fashion would space all configurations too closely together.
-
-The grid search uses nested resampling. The outer loop (for the unbiased performance estimate) uses 3 folds, the inner loop (for the grid search itself) uses 5 folds.
-
-For the decision tree, the hyperparameters considered are max depth for the tree and minimum samples required for a split. All hyperparameters explored can only have positive numbers. The minimum amount of samples must be 2, hence the first exponent starts at 1.
+For the linear model, no hyperparameters are tuned. For the tree and forest, Bayesian optimization is used for trying hyperparameter configurations. This tunes the max depth and minimum samples for a split in the models. The minimum max depth is 1 and minimum minimum samples for a split is 2. Their maxes are 64 and 16,384 respectively. The forest contains 100 trees.
 
 $$
-\text{max depth} = 2^x, x \in [0,7]
+\text{max depth} = 2^x, x \in [0,6]
 $$
 
 $$
-\text{min samples} = 2^x, x \in [1,15]
+\text{min samples} = 2^x, x \in [1,14]
 $$
+
+The process uses nested resampling. The outer loop (for the unbiased performance estimate) uses 2 folds, the inner loop (for the search itself) uses 2 folds.
 
 The first pipeline optimization option is whether or not to normalize the data. This consists of z-scoring the data according to the formula
 
@@ -81,22 +79,38 @@ $$
 z = \frac{(X - \mu)}{\sigma}
 $$
 
-Regression will normalize the target (quality) as well, but classification will not.
+Regression will normalize the target (quality) as well, but classification will not do this to color.
 
-The second pipeline optimization option is to reduce the amount of features in the data. This step will remove all features except for the top 5 features that are most strongly positively or negatively correlated with the target.
+The second pipeline optimization option is to reduce the amount of features in the data. This step will remove all features except for the top features that are most strongly positively or negatively correlated with the target.
 
 The third pipeline optimization option is to reduce the amount of samples in the data by removing outliers. Outliers are determined by whether or not they are outside of the range
+
 $$
 [Q1 - 1.5 \cdot IQR, Q3 + 1.5 \cdot IQR]
 $$
 
 Where Q1 is the first quartile, Q3 is the third quartile, and IQR is the interquartile range. For a sample, if any value in any of the feature columns is out of range, the sample will be removed. The target is not a column considered.
 
-For both models, the settings for the pipeline are optimized together (not independently) along with the hyperparamters in the case of the decision tree.
+For both regression and classification, the settings for the pipeline are optimized together (not independently) along with the hyperparameters as applicable.
 
 \section{Results} %Description of what you observed, including plots.
+
+pipe.ipynb prints every combination of pipeline settings with MAPE/accuracy.
+
 \subsection{Regression}
 
+The most interesting trends are plotted in figure \ref{reg_plt}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.7]{regression_performance.png}
+    \caption{Regression performance trends}
+    \label{reg_plt} % For referencing the figure later in the document
+\end{figure}
+
+The individual best case was to not normalize the data, not reduce the samples, but reduce the features from 11 down to 9. Furthermore, a facet of the optimization process worth highlighting is that not normalizing the data occasionally causes extreme outliers in the MAPE, i.e. it mostly produces much better MAPE values but occasionally an extremely large MAPE that enlarges the average, which was reflected in the stark difference between mean and median MAPE values there.
+
+\begin{comment} old table before expanding feature reduction to every amt
 \begin{table}[H]
 \centering
 \caption{Regression model pipeline optimization effects}
@@ -115,9 +129,61 @@ Normalize   & Feature Reduction & Sample Reduction & MAPE \\ \hline
 \end{table}
 
 From table \ref{reg_table} it can be seen that all pipeline options made performance worse. In the case of feature reduction and sample reduction, trivially so. In the case of Normalization, performance was made drastically worse.
+\end{comment}
 
 \subsection{Classification}
 
+The optimal pipeline was with the forest, with the values in table \ref{best_forest_table}.
+
+\begin{table}[H]
+\centering
+\caption{Best pipeline values overall}
+\label{best_forest_table}
+\scalebox{0.9}{
+\begin{tabular}{c|c|c|c|c|c} % l for left-aligned column, c for centered columns
+Normalize   & Feature Amount & Sample Reduction & Max Depth & Min Samples Split & Acc \\ \hline
+   False    &    10           &    True         & 64        &  662              &  0.995\\
+\end{tabular}}
+\end{table}
+
+Table \ref{best_tree_table} shows the best pipeline values obtained for the tree.
+
+\begin{table}[H]
+\centering
+\caption{Best pipeline values for the tree}
+\label{best_tree_table}
+\scalebox{0.9}{
+\begin{tabular}{c|c|c|c|c|c} % l for left-aligned column, c for centered columns
+Normalize   & Feature Amount & Sample Reduction & Max Depth & Min Samples Split & Acc \\ \hline
+   True    &    7           &    True         & 34        &  950              &  0.986\\
+\end{tabular}}
+\end{table}
+
+Next, the accuracy of the tree and forest are scattered together to see if they tend to both improve together or not.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.7]{accuracy_scatterplot.png}
+    \caption{Accuracy scatterplot}
+    \label{acc_plt} % For referencing the figure later in the document
+\end{figure}
+
+As is seen from figure \ref{acc_plt}, a change in the pipeline was generally either good for both models or bad for both models.
+
+The trends of optimization are shown in figure \ref{cls_plt}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.7]{classification_performance.png}
+    \caption{Classification performance trends}
+    \label{cls_plt} % For referencing the figure later in the document
+\end{figure}
+
+From the first plot, it is clear that normalization had very little affect on the tree and forest, which was a world of difference compared to what happened with linear regression. In the second plot, it is is clear that the forest benefitted from having all the features whereas the tree was slightly better off with removing a few of the features that were least correlated with the target. Third, the value of outlier removal was very model dependent, with the forest getting better but the tree getting worse.
+
+The main takeaways from these results is that firstly pipeline tuning has the \emph{potential} to improve performance, but likewise is it very easy to cause harm with it. Second, when all parts are optimized together, there is a tendency for changes in the pipeline optimization to affect model hyperparameters as well. Third, the value of pipeline optimization steps are, in principle, heavily dependent on whether the situation is a regression or classification as well as the model class itself.
+
+\begin{comment} old table before expanding feature reduction to every amt
 \begin{table}[H]
 \centering
 \caption{Classification model pipeline optimization effects}
@@ -137,7 +203,8 @@ Normalize   & Feature Reduction & Sample Reduction & Max Depth & Min Samples Spl
 
 In the case of classification, pipeline options had merit. Sample reduction allowed for better performance from the decision tree. Feature reduction was harmful. Normalization had little to no effect.
 
-The main takeaways from these results is that firstly pipeline optimization has the \emph{potential} to improve performance, but likewise is it very easy to cause harm with it. Second, when all parts are optimized together, there is a tendency for changes in the pipeline optimization to affect model hyperparameters as well. For example, when features and samples were reduced in the data for the decision tree, the tree was better off with the more strict depth limits of 8 and 4, but with the full features and samples 8 or 4 would likely be too restrictive, hence the max depth of 32. Third, the value of pipeline optimization is, in principle, heavily dependent on whether the situation is a regression or classification as well as the model class itself.
+The main takeaways from these results is that firstly pipeline tuning has the \emph{potential} to improve performance, but likewise is it very easy to cause harm with it. Second, when all parts are optimized together, there is a tendency for changes in the pipeline optimization to affect model hyperparameters as well. For example, when features and samples were reduced in the data for the decision tree, the tree was better off with the more strict depth limits of 8 and 4, but with the full features and samples 8 or 4 would likely be too restrictive, hence the max depth of 32. Third, the value of pipeline optimization is, in principle, heavily dependent on whether the situation is a regression or classification as well as the model class itself.
+\end{comment}
 
 \section{Code} %Add the code you've used as a separate file.
 
