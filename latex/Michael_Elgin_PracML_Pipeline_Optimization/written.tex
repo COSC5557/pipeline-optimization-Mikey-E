@@ -61,7 +61,7 @@ $$
 Acc_{Classification\ model} = (1 - GE_{Classification\ model}) * 100
 $$
 
-For the linear model, no hyperparameters are tuned. For the tree and forest, Bayesian optimization is used for trying hyperparameter configurations. This tunes the max depth and minimum samples for a split in the models. The minimum max depth is 1 and minimum minimum samples for a split is 2. Their maxes are 64 and 16,384 respectively. The forest contains 100 trees.
+For the linear model, no hyperparameters are tuned. For the tree and forest, Bayesian optimization is used for trying hyperparameter configurations, with a budget of 20 iterations. This tunes the max depth and minimum samples for a split in the models. The minimum max depth is 1 and minimum minimum samples for a split is 2. Their maxes are 64 and 16,384 respectively. The forest contains 100 trees.
 
 $$
 \text{max depth} = 2^x, x \in [0,6]
@@ -108,7 +108,7 @@ The most interesting trends are plotted in figure \ref{reg_plt}.
     \label{reg_plt} % For referencing the figure later in the document
 \end{figure}
 
-The individual best case was to not normalize the data, not reduce the samples, but reduce the features from 11 down to 9. Furthermore, a facet of the optimization process worth highlighting is that not normalizing the data occasionally causes extreme outliers in the MAPE, i.e. it mostly produces much better MAPE values but occasionally an extremely large MAPE that enlarges the average, which was reflected in the stark difference between mean and median MAPE values there.
+The individual best case was to not normalize the data, not reduce the samples, but reduce the features from 11 down to 9. This trivially changes MAPE from 11.566 in the default pipeline to 11.564. Furthermore, a facet of the optimization process worth highlighting is that not normalizing the data occasionally causes extreme outliers in the MAPE, i.e. it mostly produces much better MAPE values but occasionally an extremely large MAPE that enlarges the average, which was reflected in the stark difference between mean and median MAPE values there.
 
 \begin{comment} old table before expanding feature reduction to every amt
 \begin{table}[H]
@@ -146,7 +146,7 @@ Normalize   & Feature Amount & Sample Reduction & Max Depth & Min Samples Split 
 \end{tabular}}
 \end{table}
 
-Table \ref{best_tree_table} shows the best pipeline values obtained for the tree.
+This again trivially increases the accuracy above the unchanged pipeline from 0.994 to 0.995. Table \ref{best_tree_table} shows the best pipeline values obtained for the tree.
 
 \begin{table}[H]
 \centering
@@ -158,6 +158,8 @@ Normalize   & Feature Amount & Sample Reduction & Max Depth & Min Samples Split 
    True    &    7           &    True         & 34        &  950              &  0.986\\
 \end{tabular}}
 \end{table}
+
+This increases accuracy above the unchanged pipeline from 0.981 to 0.986. Evidence for these pipelines being best includes the fact that decision trees tend to be very liable to overfit their training data, so it is no surprise that pipeline changes that remove outliers and features would help it perform better. Forests are an ensemble of trees, so their behavior is somewhat related. However more features were used in the forest, because not every tree in the ensemble needs to use every feature each time. Normalization might have helped the tree for stochastic reasons i.e. it was probably equally good as not normalizing so the best pipeline having it as true is likely somewhat arbitrary.
 
 Next, the accuracy of the tree and forest are scattered together to see if they tend to both improve together or not.
 
