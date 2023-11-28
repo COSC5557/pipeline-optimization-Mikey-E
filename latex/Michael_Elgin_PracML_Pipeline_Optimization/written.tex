@@ -212,4 +212,47 @@ The main takeaways from these results is that firstly pipeline tuning has the \e
 
 The associated code is in pipe.ipynb
 
+\section{Appendix}
+\subsection{Bayesian optimization with 100 iterations}
+
+Increasing the Bayesian optimization from 20 iterations to 100 iterations produced the following results (after 778 minutes!).
+
+\begin{table}[H]
+\centering
+\caption{Best pipeline values overall}
+\label{best_forest_table_100}
+\scalebox{0.9}{
+\begin{tabular}{c|c|c|c|c|c} % l for left-aligned column, c for centered columns
+Normalize   & Feature Amount & Sample Reduction & Max Depth & Min Samples Split & Acc \\ \hline
+   False    &    9           &    True         & 64        &  2              &  0.995\\
+\end{tabular}}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Best pipeline values for the tree}
+\label{best_tree_table_100}
+\scalebox{0.9}{
+\begin{tabular}{c|c|c|c|c|c} % l for left-aligned column, c for centered columns
+Normalize   & Feature Amount & Sample Reduction & Max Depth & Min Samples Split & Acc \\ \hline
+   True    &    10           &    True         & 64        &  2              &  0.988\\
+\end{tabular}}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.7]{accuracy_scatterplot_100.png}
+    \caption{Accuracy scatterplot}
+    \label{acc_plt_100} % For referencing the figure later in the document
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.7]{classification_performance_100.png}
+    \caption{Classification performance trends}
+    \label{cls_plt_100} % For referencing the figure later in the document
+\end{figure}
+
+The results are mostly the same. What is interesting is that both models used more features now, but still not all features. Furthermore, both the tree and forest converged to the same hyperparameter settings. Tree accuracy increased a little but but forest accuracy did not increase enough to make a difference when rounded.
+
 \end{document}
