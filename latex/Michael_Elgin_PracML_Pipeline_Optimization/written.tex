@@ -61,7 +61,7 @@ $$
 Acc_{Classification\ model} = (1 - GE_{Classification\ model}) * 100
 $$
 
-For the linear model, no hyperparameters are tuned. For the tree and forest, Bayesian optimization is used for trying hyperparameter configurations, with a budget of 20 iterations. This tunes the max depth and minimum samples for a split in the models. The minimum max depth is 1 and minimum minimum samples for a split is 2. Their maxes are 64 and 16,384 respectively. The forest contains 100 trees.
+For the linear model, no hyperparameters are tuned. For the tree and forest, Bayesian optimization is used for trying hyperparameter configurations, with a budget of 20 and 100 iterations. This tunes the max depth and minimum samples for a split in the models. The minimum max depth is 1 and minimum minimum samples for a split is 2. Their maxes are 64 and 16,384 respectively. The forest contains 100 trees.
 
 $$
 \text{max depth} = 2^x, x \in [0,6]
@@ -94,6 +94,24 @@ Where Q1 is the first quartile, Q3 is the third quartile, and IQR is the interqu
 For both regression and classification, the settings for the pipeline are optimized together (not independently) along with the hyperparameters as applicable.
 
 \section{Results} %Description of what you observed, including plots.
+
+\begin{table}[H]
+\centering
+\caption{Best and default pipelines explored, and their performance}
+\label{table_of_prominence}
+\scalebox{0.7}{
+\begin{tabular}{c|c|c|c|c|c|c|c} % l for left-aligned column, c for centered columns
+Pipeline Version & Model & Normalize   & Feature Amount & Sample Reduction & Max Depth & Min Samples Split & Acc/MAPE \\ \hline
+Default & Linear & False    & 11 &    False         & N/A        &  N/A              &  11.566\\
+Optimal & Linear & False    & 9 &    False         & N/A        &  N/A              &  11.564\\
+Default & Tree & False    & 11 &    False         & 52        &  2              &  0.983\\
+Optimal-20 &  Tree &  True    & 7 &    True         & 34        &  950              &  0.986\\
+Optimal-100 &  Tree &  True    & 10 &    True         & 64 &  2              &  0.988\\
+Default &  Forest &  False    & 11 &    False         & 61        &  2              &  0.995\\
+Optimal-20 &  Forest &  False    & 10 &    True         & 64        &  662              &  0.995\\
+Optimal-100 &  Forest &  False    & 9 &    True         & 64 &  2              &  0.995\\
+\end{tabular}}
+\end{table}
 
 pipe.ipynb prints every combination of pipeline settings with MAPE/accuracy.
 
@@ -133,33 +151,9 @@ From table \ref{reg_table} it can be seen that all pipeline options made perform
 
 \subsection{Classification}
 
-The optimal pipeline was with the forest, with the values in table \ref{best_forest_table}.
+\subsubsection{Bayesian optimization with 20 iterations}
 
-\begin{table}[H]
-\centering
-\caption{Best pipeline values overall}
-\label{best_forest_table}
-\scalebox{0.9}{
-\begin{tabular}{c|c|c|c|c|c} % l for left-aligned column, c for centered columns
-Normalize   & Feature Amount & Sample Reduction & Max Depth & Min Samples Split & Acc \\ \hline
-   False    &    10           &    True         & 64        &  662              &  0.995\\
-\end{tabular}}
-\end{table}
-
-This again trivially increases the accuracy above the unchanged pipeline from 0.994 to 0.995. Table \ref{best_tree_table} shows the best pipeline values obtained for the tree.
-
-\begin{table}[H]
-\centering
-\caption{Best pipeline values for the tree}
-\label{best_tree_table}
-\scalebox{0.9}{
-\begin{tabular}{c|c|c|c|c|c} % l for left-aligned column, c for centered columns
-Normalize   & Feature Amount & Sample Reduction & Max Depth & Min Samples Split & Acc \\ \hline
-   True    &    7           &    True         & 34        &  950              &  0.986\\
-\end{tabular}}
-\end{table}
-
-This increases accuracy above the unchanged pipeline from 0.981 to 0.986. Evidence for these pipelines being best includes the fact that decision trees tend to be very liable to overfit their training data, so it is no surprise that pipeline changes that remove outliers and features would help it perform better. Forests are an ensemble of trees, so their behavior is somewhat related. However more features were used in the forest, because not every tree in the ensemble needs to use every feature each time. Normalization might have helped the tree for stochastic reasons i.e. it was probably equally good as not normalizing so the best pipeline having it as true is likely somewhat arbitrary.
+Evidence for these pipelines being better includes the fact that decision trees tend to be very liable to overfit their training data, so it is no surprise that pipeline changes that remove outliers and features would help it perform better. Forests are an ensemble of trees, so their behavior is somewhat related. However more features were used in the forest, because not every tree in the ensemble needs to use every feature each time. Normalization might have helped the tree for stochastic reasons i.e. it was probably equally good as not normalizing so the best pipeline having it as true is likely somewhat arbitrary.
 
 Next, the accuracy of the tree and forest are scattered together to see if they tend to both improve together or not.
 
@@ -182,6 +176,27 @@ The trends of optimization are shown in figure \ref{cls_plt}.
 \end{figure}
 
 From the first plot, it is clear that normalization had very little affect on the tree and forest, which was a world of difference compared to what happened with linear regression. In the second plot, it is is clear that the forest benefitted from having all the features whereas the tree was slightly better off with removing a few of the features that were least correlated with the target. Third, the value of outlier removal was very model dependent, with the forest getting better but the tree getting worse.
+
+\subsubsection{Bayesian optimization with 100 iterations}
+
+Increasing the Bayesian optimization from 20 iterations to 100 iterations produced the following results (after 778 minutes!).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.7]{accuracy_scatterplot_100.png}
+    \caption{Accuracy scatterplot}
+    \label{acc_plt_100} % For referencing the figure later in the document
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.7]{classification_performance_100.png}
+    \caption{Classification performance trends}
+    \label{cls_plt_100} % For referencing the figure later in the document
+\end{figure}
+
+The results are mostly the same. What is interesting is that both models used more features now, but still not all features. Furthermore, both the tree and forest converged to the same hyperparameter settings. Tree accuracy increased a little but but forest accuracy did not increase enough to make a difference when rounded.
+
 
 The main takeaways from these results is that firstly pipeline tuning has the \emph{potential} to improve performance, but likewise is it very easy to cause harm with it. Second, when all parts are optimized together, there is a tendency for changes in the pipeline optimization to affect model hyperparameters as well. Third, the value of pipeline optimization steps are, in principle, heavily dependent on whether the situation is a regression or classification as well as the model class itself.
 
@@ -212,64 +227,4 @@ The main takeaways from these results is that firstly pipeline tuning has the \e
 
 The associated code is in pipe.ipynb
 
-\section{Appendix}
-\subsection{Bayesian optimization with 100 iterations}
-
-Increasing the Bayesian optimization from 20 iterations to 100 iterations produced the following results (after 778 minutes!).
-
-\begin{table}[H]
-\centering
-\caption{Best pipeline values overall}
-\label{best_forest_table_100}
-\scalebox{0.9}{
-\begin{tabular}{c|c|c|c|c|c} % l for left-aligned column, c for centered columns
-Normalize   & Feature Amount & Sample Reduction & Max Depth & Min Samples Split & Acc \\ \hline
-   False    &    9           &    True         & 64        &  2              &  0.995\\
-\end{tabular}}
-\end{table}
-
-\begin{table}[H]
-\centering
-\caption{Best pipeline values for the tree}
-\label{best_tree_table_100}
-\scalebox{0.9}{
-\begin{tabular}{c|c|c|c|c|c} % l for left-aligned column, c for centered columns
-Normalize   & Feature Amount & Sample Reduction & Max Depth & Min Samples Split & Acc \\ \hline
-   True    &    10           &    True         & 64        &  2              &  0.988\\
-\end{tabular}}
-\end{table}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[scale=0.7]{accuracy_scatterplot_100.png}
-    \caption{Accuracy scatterplot}
-    \label{acc_plt_100} % For referencing the figure later in the document
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[scale=0.7]{classification_performance_100.png}
-    \caption{Classification performance trends}
-    \label{cls_plt_100} % For referencing the figure later in the document
-\end{figure}
-
-The results are mostly the same. What is interesting is that both models used more features now, but still not all features. Furthermore, both the tree and forest converged to the same hyperparameter settings. Tree accuracy increased a little but but forest accuracy did not increase enough to make a difference when rounded.
-
-\subsection{Default hyperparameter values (the default pipeline)}
-
-From section \ref{reg_results}, the default regression pipeline improved MAPE from 11.566 to 11.564.
-
-For classification, still with 100 iterations of Bayesian optimization, the accuracies for the default pipeline are in table \ref{default_pipeline_values}
-
-\begin{table}[H]
-\centering
-\caption{Default pipeline values - 1st row: tree, 2nd row: forest}
-\label{default_pipeline_values}
-\scalebox{0.9}{
-\begin{tabular}{c|c|c|c|c|c} % l for left-aligned column, c for centered columns
-Normalize   & Feature Amount & Sample Reduction & Max Depth & Min Samples Split & Acc \\ \hline
-    False    &    11           &    False         & 52        &  2              &  0.983\\
-    False    &    11           &    False         & 61        &  2              &  0.995\\
-\end{tabular}}
-\end{table}
 \end{document}
