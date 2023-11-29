@@ -97,7 +97,7 @@ For both regression and classification, the settings for the pipeline are optimi
 
 pipe.ipynb prints every combination of pipeline settings with MAPE/accuracy.
 
-\subsection{Regression}
+\subsection{Regression}\label{reg_results}
 
 The most interesting trends are plotted in figure \ref{reg_plt}.
 
@@ -255,4 +255,21 @@ Normalize   & Feature Amount & Sample Reduction & Max Depth & Min Samples Split 
 
 The results are mostly the same. What is interesting is that both models used more features now, but still not all features. Furthermore, both the tree and forest converged to the same hyperparameter settings. Tree accuracy increased a little but but forest accuracy did not increase enough to make a difference when rounded.
 
+\subsection{Default hyperparameter values (the default pipeline)}
+
+From section \ref{reg_results}, the default regression pipeline improved MAPE from 11.566 to 11.564.
+
+For classification, still with 100 iterations of Bayesian optimization, the accuracies for the default pipeline are in table \ref{default_pipeline_values}
+
+\begin{table}[H]
+\centering
+\caption{Default pipeline values - 1st row: tree, 2nd row: forest}
+\label{default_pipeline_values}
+\scalebox{0.9}{
+\begin{tabular}{c|c|c|c|c|c} % l for left-aligned column, c for centered columns
+Normalize   & Feature Amount & Sample Reduction & Max Depth & Min Samples Split & Acc \\ \hline
+    False    &    11           &    False         & 52        &  2              &  0.983\\
+    False    &    11           &    False         & 61        &  2              &  0.995\\
+\end{tabular}}
+\end{table}
 \end{document}
