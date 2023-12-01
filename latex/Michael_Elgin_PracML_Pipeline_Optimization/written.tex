@@ -97,13 +97,23 @@ For both regression and classification, the settings for the pipeline are optimi
 
 \begin{table}[H]
 \centering
-\caption{Best and default pipelines explored, and their performance}
-\label{table_of_prominence}
+\caption{Best and default regression pipelines explored, and their performance}
+\label{table_of_prominence_reg}
 \scalebox{0.7}{
 \begin{tabular}{c|c|c|c|c|c|c|c} % l for left-aligned column, c for centered columns
-Pipeline Version & Model & Normalize   & Feature Amount & Sample Reduction & Max Depth & Min Samples Split & Acc/MAPE \\ \hline
+Pipeline Version & Model & Normalize   & Feature Amount & Sample Reduction & Max Depth & Min Samples Split & MAPE \\ \hline
 Default & Linear & False    & 11 &    False         & N/A        &  N/A              &  11.566\\
 Optimal & Linear & False    & 9 &    False         & N/A        &  N/A              &  11.564\\
+\end{tabular}}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Best and default classification pipelines explored, and their performance}
+\label{table_of_prominence_cls}
+\scalebox{0.7}{
+\begin{tabular}{c|c|c|c|c|c|c|c} % l for left-aligned column, c for centered columns
+Pipeline Version & Model & Normalize   & Feature Amount & Sample Reduction & Max Depth & Min Samples Split & Acc \\ \hline
 Default & Tree & False    & 11 &    False         & 52        &  2              &  0.983\\
 Optimal-20 &  Tree &  True    & 7 &    True         & 34        &  950              &  0.986\\
 Optimal-100 &  Tree &  True    & 10 &    True         & 64 &  2              &  0.988\\
